@@ -1,0 +1,1177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dailies — Personal Video Tracker</title>
+</head>
+<body>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --border: rgba(11,11,11,.10);
+    --accent: #eda100;
+    --accent-deep: #8a5f00;
+    --accent-ink: #231a00;
+    --rec: #d03b3b;
+    --good: #006300;
+    --stage-shot: #898781;
+    --stage-editing: #b57c00;
+    --stage-ready: #2a78d6;
+    --stage-posted: #008300;
+    --s1: #2a78d6; --s2: #008300; --s3: #e87ba4; --s4: #eda100;
+    --s5: #1baf7a; --s6: #eb6834; --s7: #4a3aa7; --s8: #e34948;
+    --shadow: 0 1px 2px rgba(11,11,11,.05), 0 4px 14px rgba(11,11,11,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --border: rgba(255,255,255,.10);
+      --accent: #c98500;
+      --accent-deep: #eda100;
+      --accent-ink: #1c1300;
+      --good: #0ca30c;
+      --stage-shot: #898781;
+      --stage-editing: #c98500;
+      --stage-ready: #3987e5;
+      --stage-posted: #23b023;
+      --s1: #3987e5; --s2: #008300; --s3: #d55181; --s4: #c98500;
+      --s5: #199e70; --s6: #d95926; --s7: #9085e9; --s8: #e66767;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255,255,255,.10);
+    --accent: #c98500;
+    --accent-deep: #eda100;
+    --accent-ink: #1c1300;
+    --good: #0ca30c;
+    --stage-shot: #898781;
+    --stage-editing: #c98500;
+    --stage-ready: #3987e5;
+    --stage-posted: #23b023;
+    --s1: #3987e5; --s2: #008300; --s3: #d55181; --s4: #c98500;
+    --s5: #199e70; --s6: #d95926; --s7: #9085e9; --s8: #e66767;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --border: rgba(11,11,11,.10);
+    --accent: #eda100;
+    --accent-deep: #8a5f00;
+    --accent-ink: #231a00;
+    --good: #006300;
+    --stage-shot: #898781;
+    --stage-editing: #b57c00;
+    --stage-ready: #2a78d6;
+    --stage-posted: #008300;
+    --s1: #2a78d6; --s2: #008300; --s3: #e87ba4; --s4: #eda100;
+    --s5: #1baf7a; --s6: #eb6834; --s7: #4a3aa7; --s8: #e34948;
+    --shadow: 0 1px 2px rgba(11,11,11,.05), 0 4px 14px rgba(11,11,11,.05);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 0 20px 80px; }
+
+  /* ---------- header ---------- */
+  header.app {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: 26px 0 18px;
+  }
+  .logo { display: flex; align-items: baseline; gap: 10px; }
+  .rec-dot {
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--rec); align-self: center; flex: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--rec) 18%, transparent);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .rec-dot { animation: tally 2.4s ease-in-out infinite; }
+    @keyframes tally { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+  }
+  h1 { font-size: 22px; font-weight: 750; letter-spacing: -.02em; margin: 0; }
+  .tagline {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: .14em;
+    color: var(--muted);
+  }
+  .header-actions { margin-left: auto; display: flex; gap: 8px; }
+
+  /* ---------- buttons ---------- */
+  button, .btn {
+    font: 600 13px/1 system-ui, -apple-system, "Segoe UI", sans-serif;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink);
+    border-radius: 7px;
+    padding: 8px 12px;
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--axis); }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible {
+    outline: 2px solid var(--accent-deep); outline-offset: 2px;
+  }
+  .btn-primary {
+    background: var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 60%, var(--ink));
+    color: var(--accent-ink);
+  }
+  .btn-primary:hover { filter: brightness(1.05); }
+  .btn-ghost { background: transparent; border-color: transparent; color: var(--ink-2); }
+  .btn-ghost:hover { border-color: var(--border); }
+  .btn-danger { color: var(--rec); }
+  .btn-tiny {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em;
+    padding: 5px 8px; font-weight: 600;
+  }
+
+  /* ---------- tabs ---------- */
+  nav.tabs {
+    display: inline-flex; gap: 2px; padding: 3px;
+    background: color-mix(in srgb, var(--ink) 5%, var(--page));
+    border: 1px solid var(--border); border-radius: 9px;
+    margin-bottom: 22px;
+  }
+  nav.tabs button {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: .1em;
+    border: none; background: transparent; color: var(--ink-2);
+    padding: 8px 16px; border-radius: 7px;
+  }
+  nav.tabs button[aria-selected="true"] {
+    background: var(--surface); color: var(--ink);
+    box-shadow: var(--shadow);
+  }
+
+  /* ---------- quick add ---------- */
+  .quick-add {
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px; margin-bottom: 22px;
+    box-shadow: var(--shadow);
+  }
+  .quick-add input[type="text"] { flex: 1 1 220px; }
+  input, select, textarea {
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page); color: var(--ink);
+    border: 1px solid var(--border); border-radius: 7px;
+    padding: 8px 10px;
+  }
+  input[type="date"], input[type="number"] {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13px;
+  }
+
+  /* ---------- board ---------- */
+  .board {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+  }
+  @media (max-width: 980px) { .board { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .board { grid-template-columns: 1fr; } }
+  .col { min-width: 0; }
+  .col-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 2px 10px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: .12em;
+    color: var(--ink-2);
+  }
+  .col-head .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .col-head .count {
+    margin-left: auto; color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .col-body { display: flex; flex-direction: column; gap: 10px; min-height: 60px; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 9px; padding: 12px 12px 10px;
+    box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .card .title { font-weight: 650; font-size: 14.5px; line-height: 1.3; overflow-wrap: anywhere; }
+  .card .meta {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px; color: var(--muted); letter-spacing: .04em;
+    font-variant-numeric: tabular-nums;
+  }
+  .card .notes { font-size: 13px; color: var(--ink-2); overflow-wrap: anywhere; }
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .chip {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10.5px; letter-spacing: .04em;
+    padding: 2px 8px; border-radius: 20px;
+    background: color-mix(in srgb, var(--chip-c, var(--muted)) 13%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--chip-c, var(--muted)) 32%, transparent);
+    color: color-mix(in srgb, var(--chip-c, var(--muted)) 62%, var(--ink));
+    white-space: nowrap;
+  }
+  .chip a { color: inherit; text-decoration: none; }
+  .chip a:hover { text-decoration: underline; }
+  .card .stats-line {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11.5px; color: var(--ink-2); font-variant-numeric: tabular-nums;
+  }
+  .card-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+  .empty-col {
+    border: 1.5px dashed var(--grid); border-radius: 9px;
+    color: var(--muted); font-size: 12.5px; text-align: center;
+    padding: 18px 10px;
+  }
+
+  /* ---------- filter row ---------- */
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+  .toolbar input[type="search"] { flex: 1 1 200px; max-width: 320px; }
+
+  /* ---------- analyze ---------- */
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
+  @media (max-width: 800px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+  .tile {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 13px 14px; box-shadow: var(--shadow);
+  }
+  .tile .label {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: .12em;
+    color: var(--muted); display: flex; align-items: center; gap: 6px;
+  }
+  .tile .label .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .tile .value { font-size: 26px; font-weight: 700; letter-spacing: -.02em; margin-top: 4px; }
+  .tile .sub { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+  .tile.hero .value { font-size: 34px; }
+
+  .panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; box-shadow: var(--shadow);
+    margin-bottom: 14px;
+  }
+  .panel h2 { font-size: 15px; font-weight: 700; margin: 0 0 2px; letter-spacing: -.01em; }
+  .panel .sub { font-size: 12.5px; color: var(--muted); margin: 0 0 12px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; }
+  .legend .item {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--ink-2);
+  }
+  .legend .swatch { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+
+  .chart-box { position: relative; }
+  .chart-box svg { display: block; width: 100%; }
+  .tooltip {
+    position: absolute; pointer-events: none; z-index: 5;
+    background: var(--surface); border: 1px solid var(--axis);
+    border-radius: 8px; padding: 8px 10px; box-shadow: var(--shadow);
+    font-size: 12px; min-width: 130px; display: none;
+  }
+  .tooltip .t-date {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10.5px; color: var(--muted); letter-spacing: .06em; margin-bottom: 4px;
+  }
+  .tooltip .t-row { display: flex; align-items: center; gap: 6px; padding: 1px 0; }
+  .tooltip .t-row .swatch { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .tooltip .t-row .v {
+    margin-left: auto; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-variant-numeric: tabular-nums; font-size: 11.5px; padding-left: 10px;
+  }
+
+  /* bar rows */
+  .bar-rows { display: flex; flex-direction: column; gap: 9px; }
+  .bar-row { display: grid; grid-template-columns: 110px 1fr 64px; gap: 10px; align-items: center; }
+  .bar-row .name { font-size: 13px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-row .track { height: 18px; border-radius: 0 4px 4px 0; background: color-mix(in srgb, var(--ink) 4%, var(--surface)); position: relative; }
+  .bar-row .fill { position: absolute; inset: 0 auto 0 0; border-radius: 0 4px 4px 0; min-width: 2px; }
+  .bar-row .val {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px; font-variant-numeric: tabular-nums; color: var(--ink-2); text-align: right;
+  }
+
+  /* table */
+  .table-scroll { overflow-x: auto; }
+  table.data { border-collapse: collapse; width: 100%; font-size: 13px; }
+  table.data th {
+    text-align: left; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--muted); font-weight: 600;
+    padding: 6px 10px; border-bottom: 1px solid var(--axis); white-space: nowrap;
+  }
+  table.data td { padding: 8px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  table.data td.num {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-variant-numeric: tabular-nums; font-size: 12.5px; text-align: right; white-space: nowrap;
+  }
+  table.data th.num { text-align: right; }
+
+  /* ---------- dialogs ---------- */
+  dialog {
+    border: 1px solid var(--border); border-radius: 12px;
+    background: var(--surface); color: var(--ink);
+    padding: 0; max-width: 440px; width: calc(100vw - 40px);
+    box-shadow: 0 10px 40px rgba(0,0,0,.25);
+  }
+  dialog::backdrop { background: rgba(0,0,0,.45); }
+  dialog form { display: flex; flex-direction: column; gap: 12px; padding: 20px; }
+  dialog h3 { margin: 0 0 2px; font-size: 16px; letter-spacing: -.01em; }
+  dialog .hint { font-size: 12.5px; color: var(--muted); margin: -6px 0 0; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field > span {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted);
+  }
+  .field-row { display: flex; gap: 10px; }
+  .field-row .field { flex: 1; }
+  .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+  .post-list { display: flex; flex-direction: column; gap: 6px; }
+  .post-list .post-item {
+    display: flex; align-items: center; gap: 8px; font-size: 13px;
+    border: 1px solid var(--grid); border-radius: 7px; padding: 6px 8px;
+  }
+  .post-list .post-item .when {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px; color: var(--muted); margin-left: auto;
+  }
+
+  .empty-state {
+    text-align: center; padding: 50px 20px; color: var(--ink-2);
+  }
+  .empty-state .clap { font-size: 30px; margin-bottom: 8px; }
+  .empty-state p { max-width: 420px; margin: 6px auto; }
+
+  .footer-note {
+    margin-top: 28px; text-align: center;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+  }
+</style>
+
+<div class="wrap">
+  <header class="app">
+    <span class="rec-dot" aria-hidden="true"></span>
+    <div class="logo">
+      <h1>Dailies</h1>
+      <span class="tagline">shoot · edit · post · analyze</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn-tiny" id="btn-platforms" type="button">Platforms</button>
+      <button class="btn-tiny" id="btn-export" type="button">Export</button>
+      <button class="btn-tiny" id="btn-import" type="button">Import</button>
+      <input type="file" id="import-file" accept="application/json" hidden>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button role="tab" aria-selected="true" data-tab="pipeline" type="button">Pipeline</button>
+    <button role="tab" aria-selected="false" data-tab="analyze" type="button">Analyze</button>
+  </nav>
+
+  <!-- ============ PIPELINE ============ -->
+  <section id="view-pipeline">
+    <form class="quick-add" id="quick-add">
+      <input type="text" id="qa-title" placeholder="New video title — e.g. “Morning routine vlog”" required maxlength="120">
+      <input type="date" id="qa-date" title="Shoot date">
+      <button class="btn-primary" type="submit">+ Add video</button>
+    </form>
+
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="Search titles &amp; notes…" aria-label="Search videos">
+      <span class="tagline" id="board-summary"></span>
+    </div>
+
+    <div id="board-area"></div>
+  </section>
+
+  <!-- ============ ANALYZE ============ -->
+  <section id="view-analyze" hidden>
+    <div id="analyze-area"></div>
+  </section>
+
+  <p class="footer-note">Saved in this browser · Export JSON to back up</p>
+</div>
+
+<!-- dialogs -->
+<dialog id="dlg-edit">
+  <form method="dialog" id="form-edit">
+    <h3 id="edit-heading">Edit video</h3>
+    <div class="field"><span>Title</span><input type="text" id="ed-title" required maxlength="120"></div>
+    <div class="field-row">
+      <div class="field"><span>Shoot date</span><input type="date" id="ed-date"></div>
+      <div class="field"><span>Stage</span>
+        <select id="ed-status">
+          <option value="shot">To edit</option>
+          <option value="editing">Editing</option>
+          <option value="ready">To post</option>
+          <option value="posted">Posted</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><span>Notes</span><textarea id="ed-notes" rows="3" maxlength="500"></textarea></div>
+    <div class="field" id="ed-posts-wrap" hidden>
+      <span>Posted to</span>
+      <div class="post-list" id="ed-posts"></div>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="btn-ghost" data-close>Cancel</button>
+      <button type="submit" class="btn-primary" value="save">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-post">
+  <form method="dialog" id="form-post">
+    <h3>Mark as posted</h3>
+    <p class="hint" id="post-video-name"></p>
+    <div class="field"><span>Platform</span><select id="po-platform"></select></div>
+    <div class="field"><span>Link (optional)</span><input type="url" id="po-url" placeholder="https://…"></div>
+    <div class="field"><span>Posted on</span><input type="date" id="po-date"></div>
+    <div class="dialog-actions">
+      <button type="button" class="btn-ghost" data-close>Cancel</button>
+      <button type="submit" class="btn-primary" value="save">Save post</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-stats">
+  <form method="dialog" id="form-stats">
+    <h3>Log performance</h3>
+    <p class="hint" id="stats-video-name"></p>
+    <div class="field-row">
+      <div class="field"><span>Platform</span><select id="st-platform"></select></div>
+      <div class="field"><span>As of</span><input type="date" id="st-date"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><span>Views</span><input type="number" id="st-views" min="0" placeholder="0"></div>
+      <div class="field"><span>Likes</span><input type="number" id="st-likes" min="0" placeholder="0"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><span>Comments</span><input type="number" id="st-comments" min="0" placeholder="0"></div>
+      <div class="field"><span>Shares</span><input type="number" id="st-shares" min="0" placeholder="0"></div>
+    </div>
+    <p class="hint">Enter the running totals shown on the platform. Log again any time — each snapshot builds the trend line.</p>
+    <div class="dialog-actions">
+      <button type="button" class="btn-ghost" data-close>Cancel</button>
+      <button type="submit" class="btn-primary" value="save">Save snapshot</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-platforms">
+  <form method="dialog" id="form-platforms">
+    <h3>Platforms</h3>
+    <p class="hint">Where you post. Add your own — they become options everywhere.</p>
+    <div class="post-list" id="platform-list"></div>
+    <div class="field-row">
+      <input type="text" id="new-platform" placeholder="Add platform… e.g. X, Facebook" maxlength="30" style="flex:1">
+      <button type="button" id="btn-add-platform">Add</button>
+    </div>
+    <div class="dialog-actions">
+      <button type="submit" class="btn-primary" value="done">Done</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(function () {
+  'use strict';
+  var KEY = 'dailies.v1';
+  var STAGES = ['shot', 'editing', 'ready', 'posted'];
+  var STAGE_LABEL = { shot: 'To edit', editing: 'Editing', ready: 'To post', posted: 'Posted' };
+  var STAGE_VAR = { shot: '--stage-shot', editing: '--stage-editing', ready: '--stage-ready', posted: '--stage-posted' };
+  var ADVANCE_LABEL = { shot: 'Start edit →', editing: 'Edit done →', ready: 'Mark posted…' };
+  var SERIES_VARS = ['--s1', '--s2', '--s3', '--s4', '--s5', '--s6', '--s7', '--s8'];
+
+  var state = load();
+  var currentTab = 'pipeline';
+  var searchTerm = '';
+  var editingId = null, postingId = null, statsId = null;
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw) {
+        var s = JSON.parse(raw);
+        if (s && Array.isArray(s.videos) && Array.isArray(s.platforms)) return s;
+      }
+    } catch (e) {}
+    return { platforms: ['YouTube', 'Instagram', 'TikTok'], videos: [] };
+  }
+  function save() { localStorage.setItem(KEY, JSON.stringify(state)); }
+  function uid() { return 'v' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function todayISO() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function fmt(n) {
+    n = +n || 0;
+    if (n >= 1e6) return (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + 'k';
+    return String(n);
+  }
+  function byId(id) { return document.getElementById(id); }
+  function findVideo(id) {
+    for (var i = 0; i < state.videos.length; i++) if (state.videos[i].id === id) return state.videos[i];
+    return null;
+  }
+  function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+  function platformVar(name) {
+    var i = state.platforms.indexOf(name);
+    if (i < 0 || i >= SERIES_VARS.length) return '--muted';
+    return SERIES_VARS[i];
+  }
+
+  /* ---------- metrics helpers ---------- */
+  function latestPerPlatform(v) {
+    var map = {};
+    (v.metrics || []).forEach(function (m) {
+      var cur = map[m.platform];
+      if (!cur || m.date >= cur.date) map[m.platform] = m;
+    });
+    return map;
+  }
+  function totals(v) {
+    var map = latestPerPlatform(v), t = { views: 0, likes: 0, comments: 0, shares: 0 };
+    Object.keys(map).forEach(function (k) {
+      t.views += +map[k].views || 0; t.likes += +map[k].likes || 0;
+      t.comments += +map[k].comments || 0; t.shares += +map[k].shares || 0;
+    });
+    return t;
+  }
+  function seriesPoints(v) {
+    var dates = [];
+    (v.metrics || []).forEach(function (m) { if (dates.indexOf(m.date) < 0) dates.push(m.date); });
+    dates.sort();
+    return dates.map(function (d) {
+      var per = {};
+      (v.metrics || []).forEach(function (m) {
+        if (m.date <= d) {
+          var c = per[m.platform];
+          if (!c || m.date >= c.date) per[m.platform] = m;
+        }
+      });
+      var s = 0;
+      Object.keys(per).forEach(function (k) { s += +per[k].views || 0; });
+      return { date: d, value: s };
+    });
+  }
+
+  /* ---------- tabs ---------- */
+  document.querySelectorAll('nav.tabs button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      currentTab = b.dataset.tab;
+      document.querySelectorAll('nav.tabs button').forEach(function (x) {
+        x.setAttribute('aria-selected', x === b ? 'true' : 'false');
+      });
+      byId('view-pipeline').hidden = currentTab !== 'pipeline';
+      byId('view-analyze').hidden = currentTab !== 'analyze';
+      render();
+    });
+  });
+
+  /* ---------- quick add ---------- */
+  byId('qa-date').value = todayISO();
+  byId('quick-add').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var title = byId('qa-title').value.trim();
+    if (!title) return;
+    state.videos.unshift({
+      id: uid(), title: title,
+      shootDate: byId('qa-date').value || todayISO(),
+      notes: '', status: 'shot', posts: [], metrics: []
+    });
+    byId('qa-title').value = '';
+    save(); render();
+    byId('qa-title').focus();
+  });
+
+  byId('search').addEventListener('input', function (e) {
+    searchTerm = e.target.value.toLowerCase();
+    render();
+  });
+
+  /* ---------- pipeline render ---------- */
+  function renderPipeline() {
+    var area = byId('board-area');
+    if (!state.videos.length) {
+      area.innerHTML =
+        '<div class="empty-state">' +
+        '<div class="clap" aria-hidden="true">🎬</div>' +
+        '<p><strong>Nothing on the board yet.</strong></p>' +
+        '<p>Add a video above each time you shoot. Move it through the pipeline as you edit and post, then log its numbers under <em>Analyze</em>.</p>' +
+        '<p><button type="button" id="btn-sample">Load sample data</button></p>' +
+        '</div>';
+      var sb = byId('btn-sample');
+      if (sb) sb.addEventListener('click', loadSample);
+      byId('board-summary').textContent = '';
+      return;
+    }
+    var q = searchTerm;
+    var visible = state.videos.filter(function (v) {
+      if (!q) return true;
+      return (v.title + ' ' + (v.notes || '')).toLowerCase().indexOf(q) >= 0;
+    });
+    var html = '<div class="board">';
+    STAGES.forEach(function (st) {
+      var vids = visible.filter(function (v) { return v.status === st; });
+      html += '<div class="col"><div class="col-head">' +
+        '<span class="dot" style="background:var(' + STAGE_VAR[st] + ')"></span>' +
+        esc(STAGE_LABEL[st]) +
+        '<span class="count">' + vids.length + '</span></div><div class="col-body">';
+      if (!vids.length) {
+        html += '<div class="empty-col">' + (q ? 'No matches' : 'Empty') + '</div>';
+      }
+      vids.forEach(function (v) { html += cardHTML(v); });
+      html += '</div></div>';
+    });
+    html += '</div>';
+    area.innerHTML = html;
+    byId('board-summary').textContent = state.videos.length + ' video' + (state.videos.length === 1 ? '' : 's') + ' tracked';
+
+    area.querySelectorAll('[data-act]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var id = el.dataset.id, act = el.dataset.act;
+        var v = findVideo(id);
+        if (!v) return;
+        if (act === 'advance') {
+          if (v.status === 'ready') { openPost(id); }
+          else {
+            var i = STAGES.indexOf(v.status);
+            if (i >= 0 && i < STAGES.length - 1) { v.status = STAGES[i + 1]; save(); render(); }
+          }
+        } else if (act === 'post') openPost(id);
+        else if (act === 'stats') openStats(id);
+        else if (act === 'edit') openEdit(id);
+        else if (act === 'del') {
+          if (confirm('Delete “' + v.title + '” and its logged stats? This can’t be undone.')) {
+            state.videos = state.videos.filter(function (x) { return x.id !== id; });
+            save(); render();
+          }
+        }
+      });
+    });
+  }
+
+  function cardHTML(v) {
+    var h = '<article class="card">';
+    h += '<div class="title">' + esc(v.title) + '</div>';
+    h += '<div class="meta">SHOT ' + esc(v.shootDate || '—') + '</div>';
+    if (v.posts && v.posts.length) {
+      h += '<div class="chips">';
+      v.posts.forEach(function (p) {
+        var inner = p.url
+          ? '<a href="' + esc(p.url) + '" target="_blank" rel="noopener noreferrer">' + esc(p.platform) + ' ↗</a>'
+          : esc(p.platform);
+        h += '<span class="chip" style="--chip-c:var(' + platformVar(p.platform) + ')">' + inner + '</span>';
+      });
+      h += '</div>';
+    }
+    if (v.notes) h += '<div class="notes">' + esc(v.notes) + '</div>';
+    if (v.metrics && v.metrics.length) {
+      var t = totals(v);
+      h += '<div class="stats-line">▸ ' + fmt(t.views) + ' views · ' + fmt(t.likes) + ' likes</div>';
+    }
+    h += '<div class="card-actions">';
+    if (v.status !== 'posted') {
+      h += '<button class="btn-tiny btn-primary" data-act="advance" data-id="' + v.id + '" type="button">' + esc(ADVANCE_LABEL[v.status]) + '</button>';
+    } else {
+      h += '<button class="btn-tiny" data-act="stats" data-id="' + v.id + '" type="button">Log stats</button>';
+      h += '<button class="btn-tiny" data-act="post" data-id="' + v.id + '" type="button">+ Platform</button>';
+    }
+    h += '<button class="btn-tiny btn-ghost" data-act="edit" data-id="' + v.id + '" type="button">Edit</button>';
+    h += '<button class="btn-tiny btn-ghost btn-danger" data-act="del" data-id="' + v.id + '" type="button" aria-label="Delete video">✕</button>';
+    h += '</div></article>';
+    return h;
+  }
+
+  /* ---------- dialogs ---------- */
+  document.querySelectorAll('dialog [data-close]').forEach(function (b) {
+    b.addEventListener('click', function () { b.closest('dialog').close('cancel'); });
+  });
+
+  function openEdit(id) {
+    var v = findVideo(id); if (!v) return;
+    editingId = id;
+    byId('ed-title').value = v.title;
+    byId('ed-date').value = v.shootDate || '';
+    byId('ed-status').value = v.status;
+    byId('ed-notes').value = v.notes || '';
+    var wrap = byId('ed-posts-wrap'), list = byId('ed-posts');
+    if (v.posts && v.posts.length) {
+      wrap.hidden = false;
+      list.innerHTML = v.posts.map(function (p, i) {
+        return '<div class="post-item"><span class="chip" style="--chip-c:var(' + platformVar(p.platform) + ')">' + esc(p.platform) + '</span>' +
+          (p.url ? '<a href="' + esc(p.url) + '" target="_blank" rel="noopener noreferrer" style="font-size:12px">link ↗</a>' : '') +
+          '<span class="when">' + esc(p.date || '') + '</span>' +
+          '<button type="button" class="btn-tiny btn-ghost btn-danger" data-rm-post="' + i + '" aria-label="Remove post">✕</button></div>';
+      }).join('');
+      list.querySelectorAll('[data-rm-post]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          v.posts.splice(+b.dataset.rmPost, 1);
+          save(); openEdit(id); render();
+        });
+      });
+    } else { wrap.hidden = true; list.innerHTML = ''; }
+    byId('dlg-edit').showModal();
+  }
+  byId('form-edit').addEventListener('submit', function () {
+    var v = findVideo(editingId); if (!v) return;
+    v.title = byId('ed-title').value.trim() || v.title;
+    v.shootDate = byId('ed-date').value;
+    v.status = byId('ed-status').value;
+    v.notes = byId('ed-notes').value.trim();
+    save(); render();
+  });
+
+  function fillPlatformSelect(sel, preferred) {
+    sel.innerHTML = state.platforms.map(function (p) {
+      return '<option' + (p === preferred ? ' selected' : '') + '>' + esc(p) + '</option>';
+    }).join('');
+  }
+
+  function openPost(id) {
+    var v = findVideo(id); if (!v) return;
+    postingId = id;
+    byId('post-video-name').textContent = v.title;
+    fillPlatformSelect(byId('po-platform'), null);
+    byId('po-url').value = '';
+    byId('po-date').value = todayISO();
+    byId('dlg-post').showModal();
+  }
+  byId('form-post').addEventListener('submit', function () {
+    var v = findVideo(postingId); if (!v) return;
+    v.posts = v.posts || [];
+    v.posts.push({
+      platform: byId('po-platform').value,
+      url: byId('po-url').value.trim(),
+      date: byId('po-date').value || todayISO()
+    });
+    v.status = 'posted';
+    save(); render();
+  });
+
+  function openStats(id) {
+    var v = findVideo(id); if (!v) return;
+    statsId = id;
+    byId('stats-video-name').textContent = v.title;
+    var preferred = (v.posts && v.posts.length) ? v.posts[0].platform : null;
+    fillPlatformSelect(byId('st-platform'), preferred);
+    byId('st-date').value = todayISO();
+    ['st-views', 'st-likes', 'st-comments', 'st-shares'].forEach(function (i) { byId(i).value = ''; });
+    byId('dlg-stats').showModal();
+  }
+  byId('form-stats').addEventListener('submit', function () {
+    var v = findVideo(statsId); if (!v) return;
+    v.metrics = v.metrics || [];
+    v.metrics.push({
+      date: byId('st-date').value || todayISO(),
+      platform: byId('st-platform').value,
+      views: +byId('st-views').value || 0,
+      likes: +byId('st-likes').value || 0,
+      comments: +byId('st-comments').value || 0,
+      shares: +byId('st-shares').value || 0
+    });
+    save(); render();
+  });
+
+  /* ---------- platforms dialog ---------- */
+  byId('btn-platforms').addEventListener('click', function () {
+    renderPlatformList();
+    byId('dlg-platforms').showModal();
+  });
+  function platformInUse(name) {
+    return state.videos.some(function (v) {
+      return (v.posts || []).some(function (p) { return p.platform === name; }) ||
+             (v.metrics || []).some(function (m) { return m.platform === name; });
+    });
+  }
+  function renderPlatformList() {
+    var list = byId('platform-list');
+    list.innerHTML = state.platforms.map(function (p, i) {
+      var used = platformInUse(p);
+      return '<div class="post-item"><span class="chip" style="--chip-c:var(' + platformVar(p) + ')">' + esc(p) + '</span>' +
+        '<span class="when">' + (used ? 'in use' : '') + '</span>' +
+        (used ? '' : '<button type="button" class="btn-tiny btn-ghost btn-danger" data-rm-pf="' + i + '" aria-label="Remove platform">✕</button>') +
+        '</div>';
+    }).join('');
+    list.querySelectorAll('[data-rm-pf]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        state.platforms.splice(+b.dataset.rmPf, 1);
+        save(); renderPlatformList(); render();
+      });
+    });
+  }
+  byId('btn-add-platform').addEventListener('click', function () {
+    var inp = byId('new-platform');
+    var name = inp.value.trim();
+    if (!name) return;
+    if (state.platforms.indexOf(name) < 0) state.platforms.push(name);
+    inp.value = '';
+    save(); renderPlatformList(); render();
+  });
+
+  /* ---------- export / import ---------- */
+  byId('btn-export').addEventListener('click', function () {
+    var blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'dailies-backup-' + todayISO() + '.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+  byId('btn-import').addEventListener('click', function () { byId('import-file').click(); });
+  byId('import-file').addEventListener('change', function (e) {
+    var f = e.target.files[0]; if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        var s = JSON.parse(r.result);
+        if (!s || !Array.isArray(s.videos) || !Array.isArray(s.platforms)) throw new Error('bad shape');
+        if (!confirm('Replace current data with the imported file? (' + s.videos.length + ' videos)')) return;
+        state = s; save(); render();
+      } catch (err) {
+        alert('That file isn’t a Dailies export — import cancelled.');
+      }
+      e.target.value = '';
+    };
+    r.readAsText(f);
+  });
+
+  /* ---------- sample data ---------- */
+  function loadSample() {
+    var t = new Date();
+    function d(offset) {
+      var x = new Date(t.getTime() + offset * 864e5);
+      return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+    }
+    state.videos = [
+      { id: uid() + 'a', title: 'Morning routine vlog', shootDate: d(-21), notes: '', status: 'posted',
+        posts: [{ platform: 'YouTube', url: '', date: d(-18) }, { platform: 'Instagram', url: '', date: d(-17) }],
+        metrics: [
+          { date: d(-17), platform: 'YouTube', views: 1200, likes: 140, comments: 22, shares: 8 },
+          { date: d(-17), platform: 'Instagram', views: 800, likes: 210, comments: 12, shares: 30 },
+          { date: d(-10), platform: 'YouTube', views: 4900, likes: 480, comments: 61, shares: 25 },
+          { date: d(-10), platform: 'Instagram', views: 2100, likes: 540, comments: 33, shares: 88 },
+          { date: d(-2), platform: 'YouTube', views: 8100, likes: 750, comments: 90, shares: 41 },
+          { date: d(-2), platform: 'Instagram', views: 2600, likes: 640, comments: 41, shares: 102 }
+        ] },
+      { id: uid() + 'b', title: 'Street food tour ep. 1', shootDate: d(-14), notes: 'Color grade the night shots', status: 'posted',
+        posts: [{ platform: 'TikTok', url: '', date: d(-11) }],
+        metrics: [
+          { date: d(-11), platform: 'TikTok', views: 5400, likes: 900, comments: 75, shares: 140 },
+          { date: d(-6), platform: 'TikTok', views: 21000, likes: 3300, comments: 240, shares: 620 },
+          { date: d(-1), platform: 'TikTok', views: 34500, likes: 5100, comments: 380, shares: 950 }
+        ] },
+      { id: uid() + 'c', title: 'Gear review — new mic', shootDate: d(-6), notes: 'Add b-roll of unboxing', status: 'editing', posts: [], metrics: [] },
+      { id: uid() + 'd', title: 'Q&A — 10k special', shootDate: d(-4), notes: '', status: 'ready', posts: [], metrics: [] },
+      { id: uid() + 'e', title: 'Behind the scenes — studio move', shootDate: d(-1), notes: 'Raw footage on card B', status: 'shot', posts: [], metrics: [] }
+    ];
+    save(); render();
+  }
+
+  /* ---------- analyze ---------- */
+  function renderAnalyze() {
+    var area = byId('analyze-area');
+    var counts = { shot: 0, editing: 0, ready: 0, posted: 0 };
+    state.videos.forEach(function (v) { if (counts[v.status] != null) counts[v.status]++; });
+
+    var grand = { views: 0, likes: 0, comments: 0, shares: 0 };
+    var withMetrics = [];
+    state.videos.forEach(function (v) {
+      if (v.metrics && v.metrics.length) {
+        var t = totals(v);
+        grand.views += t.views; grand.likes += t.likes; grand.comments += t.comments; grand.shares += t.shares;
+        withMetrics.push({ v: v, t: t });
+      }
+    });
+    var engagement = grand.views ? ((grand.likes + grand.comments + grand.shares) / grand.views * 100) : 0;
+
+    /* per-platform aggregates */
+    var perPlatform = {};
+    state.videos.forEach(function (v) {
+      var map = latestPerPlatform(v);
+      Object.keys(map).forEach(function (p) {
+        if (!perPlatform[p]) perPlatform[p] = { views: 0, likes: 0, videos: 0 };
+        perPlatform[p].views += +map[p].views || 0;
+        perPlatform[p].likes += +map[p].likes || 0;
+        perPlatform[p].videos++;
+      });
+    });
+    var platformRows = state.platforms
+      .filter(function (p) { return perPlatform[p]; })
+      .map(function (p) { return { name: p, d: perPlatform[p] }; });
+    var best = null;
+    platformRows.forEach(function (r) { if (!best || r.d.views > best.d.views) best = r; });
+
+    var html = '';
+    html += '<div class="tiles">';
+    STAGES.forEach(function (st) {
+      html += '<div class="tile"><div class="label"><span class="dot" style="background:var(' + STAGE_VAR[st] + ')"></span>' +
+        esc(STAGE_LABEL[st]) + '</div><div class="value">' + counts[st] + '</div></div>';
+    });
+    html += '</div>';
+    html += '<div class="tiles">';
+    html += '<div class="tile hero"><div class="label">Total views</div><div class="value">' + fmt(grand.views) + '</div><div class="sub">latest snapshots, all platforms</div></div>';
+    html += '<div class="tile"><div class="label">Total likes</div><div class="value">' + fmt(grand.likes) + '</div></div>';
+    html += '<div class="tile"><div class="label">Engagement</div><div class="value">' + engagement.toFixed(1) + '%</div><div class="sub">likes + comments + shares ÷ views</div></div>';
+    html += '<div class="tile"><div class="label">Best platform</div><div class="value" style="font-size:20px">' + (best ? esc(best.name) : '—') + '</div>' +
+      (best ? '<div class="sub">' + fmt(best.d.views) + ' views</div>' : '<div class="sub">log stats to find out</div>') + '</div>';
+    html += '</div>';
+
+    /* line chart panel */
+    withMetrics.sort(function (a, b) { return b.t.views - a.t.views; });
+    var top = withMetrics.slice(0, 4);
+    var dropped = withMetrics.length - top.length;
+    html += '<div class="panel"><h2>Views over time</h2><p class="sub">Running total per video, summed across platforms' +
+      (dropped > 0 ? ' · showing top 4 of ' + withMetrics.length + ' videos' : '') + '</p>';
+    if (top.length && top.some(function (x) { return x.v.metrics.length > 0; })) {
+      html += '<div class="legend">' + top.map(function (x, i) {
+        return '<span class="item"><span class="swatch" style="background:var(' + SERIES_VARS[i] + ')"></span>' + esc(x.v.title) + '</span>';
+      }).join('') + '</div>';
+      html += '<div class="chart-box" id="line-chart"><div class="tooltip" id="line-tip"></div></div>';
+    } else {
+      html += '<p class="sub">No snapshots yet. Open a posted video’s <strong>Log stats</strong> and record its numbers — two snapshots make a trend.</p>';
+    }
+    html += '</div>';
+
+    /* platform bars */
+    html += '<div class="panel"><h2>Views by platform</h2><p class="sub">Latest snapshot per video, summed</p>';
+    if (platformRows.length) {
+      var maxV = 0;
+      platformRows.forEach(function (r) { if (r.d.views > maxV) maxV = r.d.views; });
+      html += '<div class="bar-rows">' + platformRows.map(function (r) {
+        var w = maxV ? Math.max(2, r.d.views / maxV * 100) : 2;
+        return '<div class="bar-row" data-pf="' + esc(r.name) + '">' +
+          '<span class="name">' + esc(r.name) + '</span>' +
+          '<span class="track"><span class="fill" style="width:' + w + '%;background:var(' + platformVar(r.name) + ')"></span></span>' +
+          '<span class="val">' + fmt(r.d.views) + '</span></div>';
+      }).join('') + '</div>';
+    } else {
+      html += '<p class="sub">Nothing logged yet.</p>';
+    }
+    html += '</div>';
+
+    /* table */
+    html += '<div class="panel"><h2>All videos</h2><p class="sub">Every tracked video with its latest numbers</p><div class="table-scroll"><table class="data"><thead><tr>' +
+      '<th>Video</th><th>Stage</th><th>Platforms</th><th class="num">Views</th><th class="num">Likes</th><th class="num">Comments</th><th class="num">Shares</th><th class="num">Eng.</th>' +
+      '</tr></thead><tbody>';
+    if (!state.videos.length) {
+      html += '<tr><td colspan="8" style="color:var(--muted)">No videos yet — add one on the Pipeline tab.</td></tr>';
+    }
+    state.videos.forEach(function (v) {
+      var t = totals(v);
+      var eng = t.views ? ((t.likes + t.comments + t.shares) / t.views * 100).toFixed(1) + '%' : '—';
+      var pfs = (v.posts || []).map(function (p) { return esc(p.platform); }).join(', ') || '—';
+      html += '<tr><td>' + esc(v.title) + '</td>' +
+        '<td><span class="chip" style="--chip-c:var(' + STAGE_VAR[v.status] + ')">' + esc(STAGE_LABEL[v.status]) + '</span></td>' +
+        '<td>' + pfs + '</td>' +
+        '<td class="num">' + (v.metrics && v.metrics.length ? fmt(t.views) : '—') + '</td>' +
+        '<td class="num">' + (v.metrics && v.metrics.length ? fmt(t.likes) : '—') + '</td>' +
+        '<td class="num">' + (v.metrics && v.metrics.length ? fmt(t.comments) : '—') + '</td>' +
+        '<td class="num">' + (v.metrics && v.metrics.length ? fmt(t.shares) : '—') + '</td>' +
+        '<td class="num">' + eng + '</td></tr>';
+    });
+    html += '</tbody></table></div></div>';
+
+    area.innerHTML = html;
+
+    if (top.length) drawLineChart(top);
+
+    /* bar tooltips */
+    area.querySelectorAll('.bar-row').forEach(function (row) {
+      row.addEventListener('mouseenter', function () {
+        var p = perPlatform[row.dataset.pf];
+        if (!p) return;
+        showTipNear(row, row.dataset.pf, [
+          { label: 'Views', value: fmt(p.views) },
+          { label: 'Likes', value: fmt(p.likes) },
+          { label: 'Videos', value: String(p.videos) }
+        ]);
+      });
+      row.addEventListener('mouseleave', hideGlobalTip);
+    });
+  }
+
+  /* floating tooltip reused for bar rows */
+  var globalTip = null;
+  function showTipNear(el, title, rows) {
+    if (!globalTip) {
+      globalTip = document.createElement('div');
+      globalTip.className = 'tooltip';
+      globalTip.style.position = 'fixed';
+      document.body.appendChild(globalTip);
+    }
+    globalTip.innerHTML = '<div class="t-date">' + esc(title) + '</div>' + rows.map(function (r) {
+      return '<div class="t-row"><span>' + esc(r.label) + '</span><span class="v">' + esc(r.value) + '</span></div>';
+    }).join('');
+    var b = el.getBoundingClientRect();
+    globalTip.style.display = 'block';
+    globalTip.style.left = Math.min(b.left + 60, window.innerWidth - 170) + 'px';
+    globalTip.style.top = Math.max(8, b.top - globalTip.offsetHeight - 6) + 'px';
+  }
+  function hideGlobalTip() { if (globalTip) globalTip.style.display = 'none'; }
+
+  /* ---------- line chart ---------- */
+  function drawLineChart(top) {
+    var box = byId('line-chart');
+    if (!box) return;
+    var W = Math.max(300, box.clientWidth);
+    var H = 260;
+    var M = { t: 14, r: 20, b: 26, l: 46 };
+    var iw = W - M.l - M.r, ih = H - M.t - M.b;
+
+    var series = top.map(function (x, i) {
+      return { title: x.v.title, colorVar: SERIES_VARS[i], pts: seriesPoints(x.v) };
+    }).filter(function (s) { return s.pts.length > 0; });
+    if (!series.length) return;
+
+    var allDates = [];
+    series.forEach(function (s) {
+      s.pts.forEach(function (p) { if (allDates.indexOf(p.date) < 0) allDates.push(p.date); });
+    });
+    allDates.sort();
+    var minT = new Date(allDates[0] + 'T00:00:00').getTime();
+    var maxT = new Date(allDates[allDates.length - 1] + 'T00:00:00').getTime();
+    var span = Math.max(1, maxT - minT);
+    var maxV = 0;
+    series.forEach(function (s) { s.pts.forEach(function (p) { if (p.value > maxV) maxV = p.value; }); });
+    maxV = niceMax(maxV || 10);
+
+    function X(dateStr) {
+      var t = new Date(dateStr + 'T00:00:00').getTime();
+      return M.l + (maxT === minT ? iw / 2 : (t - minT) / span * iw);
+    }
+    function Y(v) { return M.t + ih - (v / maxV) * ih; }
+
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="Views over time per video">';
+    /* grid */
+    for (var g = 0; g <= 4; g++) {
+      var gy = M.t + ih - (g / 4) * ih;
+      svg += '<line x1="' + M.l + '" y1="' + gy + '" x2="' + (W - M.r) + '" y2="' + gy + '" stroke="var(--grid)" stroke-width="1"/>';
+      svg += '<text x="' + (M.l - 8) + '" y="' + (gy + 4) + '" text-anchor="end" font-size="11" fill="var(--muted)" font-family="ui-monospace,Menlo,monospace">' + fmt(maxV * g / 4) + '</text>';
+    }
+    /* baseline */
+    svg += '<line x1="' + M.l + '" y1="' + (M.t + ih) + '" x2="' + (W - M.r) + '" y2="' + (M.t + ih) + '" stroke="var(--axis)" stroke-width="1"/>';
+    /* x labels: first + last date */
+    svg += '<text x="' + M.l + '" y="' + (H - 8) + '" font-size="11" fill="var(--muted)" font-family="ui-monospace,Menlo,monospace">' + esc(allDates[0]) + '</text>';
+    if (allDates.length > 1) {
+      svg += '<text x="' + (W - M.r) + '" y="' + (H - 8) + '" text-anchor="end" font-size="11" fill="var(--muted)" font-family="ui-monospace,Menlo,monospace">' + esc(allDates[allDates.length - 1]) + '</text>';
+    }
+    /* crosshair (hidden until hover) */
+    svg += '<line id="xhair" x1="0" y1="' + M.t + '" x2="0" y2="' + (M.t + ih) + '" stroke="var(--axis)" stroke-width="1" stroke-dasharray="3 3" style="display:none"/>';
+    /* series */
+    series.forEach(function (s) {
+      var dPath = s.pts.map(function (p, i) {
+        return (i ? 'L' : 'M') + X(p.date).toFixed(1) + ' ' + Y(p.value).toFixed(1);
+      }).join(' ');
+      svg += '<path d="' + dPath + '" fill="none" stroke="var(' + s.colorVar + ')" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+      var last = s.pts[s.pts.length - 1];
+      svg += '<circle cx="' + X(last.date).toFixed(1) + '" cy="' + Y(last.value).toFixed(1) + '" r="4" fill="var(' + s.colorVar + ')" stroke="var(--surface)" stroke-width="2"/>';
+    });
+    svg += '</svg>';
+    box.insertAdjacentHTML('afterbegin', svg);
+
+    /* hover layer */
+    var tip = byId('line-tip');
+    var svgEl = box.querySelector('svg');
+    var xhair = box.querySelector('#xhair');
+    svgEl.addEventListener('mousemove', function (e) {
+      var rect = svgEl.getBoundingClientRect();
+      var mx = (e.clientX - rect.left) * (W / rect.width);
+      var nearest = null, nd = Infinity;
+      allDates.forEach(function (d) {
+        var dx = Math.abs(X(d) - mx);
+        if (dx < nd) { nd = dx; nearest = d; }
+      });
+      if (!nearest) return;
+      var cx = X(nearest);
+      xhair.setAttribute('x1', cx); xhair.setAttribute('x2', cx);
+      xhair.style.display = '';
+      var rows = '';
+      series.forEach(function (s) {
+        var val = null;
+        s.pts.forEach(function (p) { if (p.date <= nearest) val = p.value; });
+        if (val == null) return;
+        rows += '<div class="t-row"><span class="swatch" style="background:var(' + s.colorVar + ')"></span>' +
+          '<span>' + esc(s.title.length > 22 ? s.title.slice(0, 21) + '…' : s.title) + '</span>' +
+          '<span class="v">' + fmt(val) + '</span></div>';
+      });
+      tip.innerHTML = '<div class="t-date">' + esc(nearest) + '</div>' + rows;
+      tip.style.display = 'block';
+      var px = cx / W * rect.width;
+      var left = px + 14;
+      if (left + tip.offsetWidth > rect.width - 4) left = px - tip.offsetWidth - 14;
+      tip.style.left = Math.max(4, left) + 'px';
+      tip.style.top = '10px';
+    });
+    svgEl.addEventListener('mouseleave', function () {
+      tip.style.display = 'none';
+      xhair.style.display = 'none';
+    });
+  }
+  function niceMax(v) {
+    var p = Math.pow(10, Math.floor(Math.log(v) / Math.LN10));
+    var d = v / p;
+    var n = d <= 1 ? 1 : d <= 2 ? 2 : d <= 5 ? 5 : 10;
+    return n * p;
+  }
+
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    if (currentTab !== 'analyze') return;
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(render, 180);
+  });
+
+  /* ---------- render root ---------- */
+  function render() {
+    if (currentTab === 'pipeline') renderPipeline();
+    else renderAnalyze();
+  }
+  render();
+})();
+</script>
+</body>
+</html>
