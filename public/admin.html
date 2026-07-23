@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Leads · Admin</title>
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📋%3C/text%3E%3C/svg%3E" />
+  <style>
+    .admin-wrap { max-width: 1100px; margin: 0 auto; padding: 22px 18px 60px; }
+    .admin-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; gap: 12px; flex-wrap: wrap; }
+    .admin-head h1 { font-size: 1.25rem; margin: 0; }
+    .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 22px; }
+    .stat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+    .stat .n { font-size: 1.6rem; font-weight: 700; }
+    .stat .l { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+    .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+    .filters select { width: auto; min-width: 130px; padding: 9px 34px 9px 12px; }
+    table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--border); font-size: 0.88rem; vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.4px; }
+    tr:last-child td { border-bottom: 0; }
+    .pill { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+    .pill.hot { background: rgba(255,93,93,0.18); color: #ff8a8a; }
+    .pill.warm { background: rgba(255,176,32,0.18); color: #ffc65c; }
+    .pill.cold { background: rgba(90,169,255,0.18); color: #8fc3ff; }
+    .tag { display: inline-block; background: var(--card-2); border: 1px solid var(--border); border-radius: 6px; padding: 1px 7px; font-size: 0.72rem; color: var(--muted); margin: 1px 2px 1px 0; }
+    .status-sel { padding: 6px 26px 6px 10px; font-size: 0.82rem; }
+    .muted { color: var(--muted); }
+    .detail { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+    .detail b { color: var(--text); font-weight: 600; }
+    .login-box { max-width: 360px; margin: 12vh auto 0; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 24px; box-shadow: var(--shadow); }
+    .login-box h1 { margin: 0 0 6px; font-size: 1.2rem; }
+    .login-box p { color: var(--muted); margin: 0 0 20px; font-size: 0.9rem; }
+    .login-err { color: var(--hot); font-size: 0.85rem; margin-top: 10px; min-height: 1em; }
+    .table-scroll { overflow-x: auto; }
+    .empty { text-align: center; color: var(--muted); padding: 40px; }
+    a.btn { text-decoration: none; display: inline-flex; align-items: center; }
+    .rowmeta { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  </style>
+</head>
+<body>
+  <div class="admin-wrap" id="root"></div>
+
+  <script>
+  (function () {
+    'use strict';
+    var TOKEN_KEY = 'lead_admin_token';
+    var root = document.getElementById('root');
+    var token = localStorage.getItem(TOKEN_KEY);
+
+    var INTENT_LABEL = { buy: 'Buying', sell: 'Selling', general: 'General' };
+    var FIELD_LABEL = {
+      propertyType: 'Type', area: 'Area', budget: 'Budget', financing: 'Payment',
+      timeline: 'Timeline', askingPrice: 'Asking price', status: 'Property status',
+      subject: 'Subject', message: 'Message', notes: 'Notes',
+    };
+    var VALUE_LABEL = {
+      under_25k: '<$25k', '25k_50k': '$25–50k', '50k_100k': '$50–100k',
+      '100k_250k': '$100–250k', '250k_plus': '$250k+', unsure: 'Not sure',
+      cash: 'Cash', loan: 'Bank loan', need_help: 'Needs financing', asap: 'ASAP',
+      '1_3m': '1–3 mo', '3_6m': '3–6 mo', '6m_plus': '6+ mo', browsing: 'Browsing',
+      flexible: 'Flexible', testing: 'Testing market', house: 'House', apartment: 'Apartment',
+      land: 'Land', commercial: 'Commercial', other: 'Other', vacant: 'Vacant',
+      owner_occupied: 'Owner-occupied', rented: 'Rented', whatsapp: 'WhatsApp',
+      call: 'Call', telegram: 'Telegram', email: 'Email',
+    };
+    var lbl = function (v) { return VALUE_LABEL[v] || v; };
+
+    function h(html) { var d = document.createElement('div'); d.innerHTML = html; return d.firstElementChild; }
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+    function api(path, opts) {
+      opts = opts || {};
+      opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+      if (token) opts.headers.Authorization = 'Bearer ' + token;
+      return fetch(path, opts).then(function (r) {
+        if (r.status === 401) { logout(); throw new Error('unauthorized'); }
+        return r;
+      });
+    }
+
+    function logout() { token = null; localStorage.removeItem(TOKEN_KEY); renderLogin(); }
+
+    // ---- login ----
+    function renderLogin(err) {
+      root.innerHTML = '';
+      var box = h(
+        '<div class="login-box">' +
+          '<h1>Lead dashboard</h1>' +
+          '<p>Enter the admin password to view your leads.</p>' +
+          '<input id="pw" type="password" placeholder="Password" autocomplete="current-password" />' +
+          '<div class="nav" style="margin-top:16px;padding:0"><button class="btn btn-primary" id="go" style="width:100%">Sign in</button></div>' +
+          '<div class="login-err">' + (err ? esc(err) : '') + '</div>' +
+        '</div>');
+      root.appendChild(box);
+      var pw = box.querySelector('#pw');
+      var go = box.querySelector('#go');
+      function attempt() {
+        go.disabled = true; go.textContent = 'Checking…';
+        fetch('/api/admin/login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: pw.value }),
+        }).then(function (r) {
+          if (!r.ok) throw new Error('Incorrect password');
+          return r.json();
+        }).then(function (data) {
+          token = data.token; localStorage.setItem(TOKEN_KEY, token); renderDashboard();
+        }).catch(function (e) { renderLogin(e.message || 'Login failed'); });
+      }
+      go.addEventListener('click', attempt);
+      pw.addEventListener('keydown', function (e) { if (e.key === 'Enter') attempt(); });
+      pw.focus();
+    }
+
+    // ---- dashboard ----
+    var filters = { intent: '', status: '', score: '' };
+
+    function renderDashboard() {
+      root.innerHTML = '';
+      root.appendChild(h(
+        '<div class="admin-head">' +
+          '<h1>📋 Leads</h1>' +
+          '<div class="rowmeta">' +
+            '<a class="btn btn-ghost" id="csv">Export CSV</a>' +
+            '<button class="btn btn-ghost" id="refresh">Refresh</button>' +
+            '<button class="btn btn-ghost" id="logout">Sign out</button>' +
+          '</div>' +
+        '</div>'));
+      root.appendChild(h('<div class="stat-row" id="stats"></div>'));
+      root.appendChild(h(
+        '<div class="filters">' +
+          '<select id="f-intent"><option value="">All types</option><option value="buy">Buying</option><option value="sell">Selling</option><option value="general">General</option></select>' +
+          '<select id="f-score"><option value="">All scores</option><option value="hot">Hot</option><option value="warm">Warm</option><option value="cold">Cold</option></select>' +
+          '<select id="f-status"><option value="">All statuses</option><option value="new">New</option><option value="contacted">Contacted</option><option value="won">Won</option><option value="lost">Lost</option></select>' +
+        '</div>'));
+      root.appendChild(h('<div class="table-scroll"><div id="tablehost"></div></div>'));
+
+      document.getElementById('logout').addEventListener('click', logout);
+      document.getElementById('refresh').addEventListener('click', loadLeads);
+      document.getElementById('csv').addEventListener('click', downloadCsv);
+
+      ['intent', 'score', 'status'].forEach(function (k) {
+        document.getElementById('f-' + k).addEventListener('change', function (e) {
+          filters[k] = e.target.value; loadLeads();
+        });
+      });
+
+      loadStats();
+      loadLeads();
+    }
+
+    function qs() {
+      var p = [];
+      if (filters.intent) p.push('intent=' + filters.intent);
+      if (filters.status) p.push('status=' + filters.status);
+      if (filters.score) p.push('score=' + filters.score);
+      return p.length ? '?' + p.join('&') : '';
+    }
+
+    function loadStats() {
+      api('/api/admin/stats').then(function (r) { return r.json(); }).then(function (s) {
+        var host = document.getElementById('stats');
+        var cells = [
+          ['Total', s.total],
+          ['🔥 Hot', (s.byScore && s.byScore.hot) || 0],
+          ['New', (s.byStatus && s.byStatus.new) || 0],
+          ['Buying', (s.byIntent && s.byIntent.buy) || 0],
+          ['Selling', (s.byIntent && s.byIntent.sell) || 0],
+          ['Won', (s.byStatus && s.byStatus.won) || 0],
+        ];
+        host.innerHTML = cells.map(function (c) {
+          return '<div class="stat"><div class="n">' + c[1] + '</div><div class="l">' + c[0] + '</div></div>';
+        }).join('');
+      }).catch(function () {});
+    }
+
+    function downloadCsv() {
+      api('/api/admin/leads.csv' + qs()).then(function (r) { return r.blob(); }).then(function (blob) {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = 'leads.csv'; document.body.appendChild(a); a.click();
+        a.remove(); URL.revokeObjectURL(url);
+      }).catch(function () {});
+    }
+
+    function detailFor(l) {
+      var a = l.answers || {};
+      var order = l.intent === 'general'
+        ? ['subject', 'message']
+        : ['propertyType', 'area', 'budget', 'askingPrice', 'financing', 'status', 'timeline', 'notes'];
+      var parts = [];
+      order.forEach(function (k) {
+        if (a[k] === undefined || a[k] === null || String(a[k]).trim() === '') return;
+        var val = ['message', 'notes', 'subject', 'area', 'askingPrice'].indexOf(k) >= 0 ? esc(a[k]) : lbl(a[k]);
+        parts.push('<b>' + (FIELD_LABEL[k] || k) + ':</b> ' + val);
+      });
+      return parts.join('<br>');
+    }
+
+    function loadLeads() {
+      var host = document.getElementById('tablehost');
+      host.innerHTML = '<div class="empty">Loading…</div>';
+      api('/api/admin/leads' + qs()).then(function (r) { return r.json(); }).then(function (leads) {
+        if (!leads.length) { host.innerHTML = '<div class="empty">No leads yet.</div>'; return; }
+        var rows = leads.map(function (l) {
+          var when = new Date(l.createdAt).toLocaleString();
+          var contact = esc(l.phone) + (l.contactHandle ? '<br><span class="muted">' + esc(l.contactHandle) + '</span>' : '') +
+            (l.preferredContact ? '<br><span class="tag">' + lbl(l.preferredContact) + '</span>' : '');
+          var statusSel = ['new', 'contacted', 'won', 'lost'].map(function (s) {
+            return '<option value="' + s + '"' + (l.status === s ? ' selected' : '') + '>' + s + '</option>';
+          }).join('');
+          return '<tr data-id="' + l.id + '">' +
+            '<td><span class="pill ' + l.score + '">' + l.score + '</span><br><span class="tag">' + (INTENT_LABEL[l.intent] || l.intent) + '</span>' + (l.language === 'fa' ? '<span class="tag">دری</span>' : '') + '</td>' +
+            '<td><b>' + esc(l.name) + '</b><br><span class="muted" style="font-size:0.75rem">' + esc(when) + '</span></td>' +
+            '<td>' + contact + '</td>' +
+            '<td><div class="detail">' + detailFor(l) + '</div></td>' +
+            '<td><select class="status-sel" data-id="' + l.id + '">' + statusSel + '</select></td>' +
+          '</tr>';
+        }).join('');
+        host.innerHTML =
+          '<table><thead><tr><th>Lead</th><th>Name</th><th>Contact</th><th>Details</th><th>Status</th></tr></thead><tbody>' +
+          rows + '</tbody></table>';
+        Array.prototype.forEach.call(host.querySelectorAll('.status-sel'), function (sel) {
+          sel.addEventListener('change', function () {
+            var id = sel.getAttribute('data-id');
+            api('/api/admin/leads/' + id, { method: 'PATCH', body: JSON.stringify({ status: sel.value }) })
+              .then(function () { loadStats(); })
+              .catch(function () {});
+          });
+        });
+      }).catch(function () { host.innerHTML = '<div class="empty">Failed to load.</div>'; });
+    }
+
+    // ---- boot ----
+    if (token) renderDashboard(); else renderLogin();
+  })();
+  </script>
+</body>
+</html>
