@@ -52,30 +52,43 @@ def main():
     cfg = load_config()
     rows = []
     for l in listings:
-        r = analyze(l["price"], l["units"], l["monthly_rent"],
-                    rate_pct=args.rate, config=cfg)
-        rows.append((score(r, l), l, r))
-    rows.sort(key=lambda x: -x[0])
+        own = analyze(l["price"], l["units"], l["monthly_rent"],
+                      rate_pct=args.rate, owner_occupied=True, config=cfg)
+        inv = analyze(l["price"], l["units"], l["monthly_rent"],
+                      rate_pct=args.rate, owner_occupied=False, config=cfg)
+        rows.append((score(own, l), l, own, inv))
+    rows.sort(key=lambda x: -x[0])  # ranked by the owner-occupied (min-down) scenario
+
+    def coverage(r):
+        if r["rent_covers_everything"]:
+            return "rent covers mortgage + all costs"
+        if r["rent_covers_mortgage"]:
+            return "rent covers mortgage (not all operating costs)"
+        return f"rent does NOT cover mortgage (short ${r['monthly_payment'] - r['monthly_rent']:,.0f}/mo)"
+
+    def scenario_lines(label, r):
+        print(f"- **{label}**: down ${r['down_payment']:,} ({r['down_payment_pct']}%), "
+              f"cash to close ${r['cash_to_close']:,}, mortgage ${r['monthly_payment']:,}/mo")
+        print(f"  - Cash flow **${r['monthly_cash_flow']:,}/mo** — {coverage(r)}")
+        print(f"  - Cap rate {r['cap_rate_pct']}% | cash-on-cash {r['cash_on_cash_pct']}% | "
+              f"DSCR {r['dscr']} | breakeven rent ${r['breakeven_rent']:,}")
 
     print(f"# Ranked candidates ({len(rows)} analyzed, top {args.top} shown)\n")
-    for rank, (s, l, r) in enumerate(rows[: args.top], 1):
-        cov = "rent covers mortgage + all costs" if r["rent_covers_everything"] else (
-            "rent covers mortgage" if r["rent_covers_mortgage"] else
-            f"rent does NOT cover mortgage (short ${r['monthly_payment'] - r['monthly_rent']:,}/mo)")
+    for rank, (s, l, own, inv) in enumerate(rows[: args.top], 1):
         print(f"## {rank}. {l['address']} — score {s}")
         print(f"- **${l['price']:,}** | {l['units']} units | rent ${l['monthly_rent']:,}/mo ({l.get('rent_source', 'estimate')})")
         print(f"- {l.get('url', '')}")
         print(f"- Location: {l.get('location_notes', 'n/a')}")
-        print(f"- Min down **${r['down_payment']:,}** ({r['down_payment_pct']}%), cash to close ${r['cash_to_close']:,}")
-        print(f"- Mortgage ${r['monthly_payment']:,}/mo @ {r['rate_pct']}%; opex ${r['monthly_operating_costs']:,}/mo")
-        print(f"- **Cash flow ${r['monthly_cash_flow']:,}/mo** — {cov}")
-        print(f"- Cap rate {r['cap_rate_pct']}% | cash-on-cash {r['cash_on_cash_pct']}% | DSCR {r['dscr']} | breakeven rent ${r['breakeven_rent']:,}")
+        print(f"- Mortgage @ {own['rate_pct']}% / {own['amortization_years']}yr; opex ${own['monthly_operating_costs']:,}/mo")
+        scenario_lines("Owner-occupied (min 10% down)", own)
+        scenario_lines("Pure rental (min 20% down)", inv)
         print()
 
     if len(rows) > args.top:
         print("### Also analyzed (didn't make the cut)")
-        for s, l, r in rows[args.top:]:
-            print(f"- {l['address']} (${l['price']:,}, {l['units']}u): score {s}, cash flow ${r['monthly_cash_flow']:,}/mo")
+        for s, l, own, inv in rows[args.top:]:
+            print(f"- {l['address']} (${l['price']:,}, {l['units']}u): score {s}, "
+                  f"cash flow ${own['monthly_cash_flow']:,}/mo owner-occ / ${inv['monthly_cash_flow']:,}/mo rental")
 
 
 if __name__ == "__main__":

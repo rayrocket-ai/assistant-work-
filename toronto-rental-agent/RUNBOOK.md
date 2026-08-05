@@ -55,13 +55,13 @@ Demote a pick with a bad location even if the math scores well, and say why.
 
 ## Step 6 — Deliver
 1. Write the report to `toronto-rental-agent/reports/YYYY-MM-DD.md`:
-   - Top 2–3 properties: the analyzer output plus 2–3 sentences each on why
-     it's a good investment and any risks (condition, tenancies in place,
-     neighbourhood direction).
+   - Top 2–3 properties: the analyzer output (it shows BOTH financing
+     scenarios per property — owner-occupied 10% min down and pure-rental 20%
+     down) plus 2–3 sentences each on why it's a good investment and any risks
+     (condition, tenancies in place, neighbourhood direction).
    - Today's rate used, and the full also-analyzed list.
-   - A caveats line: numbers assume owner-occupying one unit (that's what
-     unlocks 10% min down for 3–4 units; a pure rental needs 20% down),
-     rents unverified until seen, listing data from public snippets.
+   - A caveats line: 10% minimum down requires living in one unit; rents
+     unverified until seen; listing data from public snippets.
 2. Send the report file to the user (SendUserFile, status: proactive).
 3. Commit the report (and any config rate update) to branch
    `claude/toronto-rental-property-agent-kk93a3` and push.
