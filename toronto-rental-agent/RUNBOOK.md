@@ -16,8 +16,24 @@ the search fails, use `financing.default_rate_pct` from config.json. If the rate
 moved >0.25% from the config default, update config.json in your commit.
 
 ## Step 2 — Find candidate listings (aim for 6–10 candidates)
-**Field-tested 2026-08-05: WebFetch returns 403 on essentially ALL listing
-sites from this environment** (zolo, realtor.ca, housesigma, rew, kijiji,
+**FIRST, test whether direct browsing works** — it's strictly better than
+snippet-mining when available:
+```
+NODE_PATH=/opt/node22/lib/node_modules node toronto-rental-agent/browse.js "https://www.zolo.ca/toronto-real-estate/triplex" --links
+```
+- If it renders: browse Zolo/HouseSigma category pages directly (sort by
+  newest), read listing pages for price/units/rents/days-on-market, and skip
+  the snippet workarounds below. Listing status is live, which also satisfies
+  most of Step 2.5. If HS_EMAIL/HS_PASSWORD env vars are set, add
+  `--housesigma-login` to unlock HouseSigma active/sold status — treat it as
+  authoritative.
+- If it fails with ERR_TUNNEL_CONNECTION_FAILED: the environment's network
+  policy blocks listing sites (state as of 2026-08-05) — fall back to the
+  snippet techniques below and say in the report that live verification was
+  unavailable.
+
+**Snippet fallback — field-tested 2026-08-05: WebFetch returns 403 on
+essentially ALL listing sites from this environment** (zolo, realtor.ca, housesigma, rew, kijiji,
 zillow, trovit, keyhomes, viewhomes, small realtor sites, even news sites).
 Don't burn time on fetches — WebSearch snippets are the working channel, and
 they surface prices, unit counts, and even stated rents.
