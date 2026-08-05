@@ -11,9 +11,13 @@ Input: a JSON file of listings, e.g.
     "monthly_rent": 5600,
     "rent_source": "listed actual rents" | "market estimate",
     "location_notes": "5 min walk to Woodbine station",
-    "days_on_market": 12
+    "days_on_market": 12,
+    "toronto": true
   }, ...
 ]
+
+Set "toronto": false for 905-area properties (outside the City of Toronto) —
+they pay only the provincial land transfer tax, not Toronto's municipal double.
 
 Output: ranked markdown to stdout.
   python3 analyze.py candidates.json [--rate 4.09] [--top 3]
@@ -52,10 +56,11 @@ def main():
     cfg = load_config()
     rows = []
     for l in listings:
-        own = analyze(l["price"], l["units"], l["monthly_rent"],
-                      rate_pct=args.rate, owner_occupied=True, config=cfg)
-        inv = analyze(l["price"], l["units"], l["monthly_rent"],
-                      rate_pct=args.rate, owner_occupied=False, config=cfg)
+        in_toronto = l.get("toronto", True)
+        own = analyze(l["price"], l["units"], l["monthly_rent"], rate_pct=args.rate,
+                      owner_occupied=True, toronto=in_toronto, config=cfg)
+        inv = analyze(l["price"], l["units"], l["monthly_rent"], rate_pct=args.rate,
+                      owner_occupied=False, toronto=in_toronto, config=cfg)
         rows.append((score(own, l), l, own, inv))
     rows.sort(key=lambda x: -x[0])  # ranked by the owner-occupied (min-down) scenario
 

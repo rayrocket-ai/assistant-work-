@@ -1,6 +1,6 @@
 {
   "search": {
-    "region": "Toronto + inner GTA (East York, Scarborough, North York, Etobicoke, York)",
+    "region": "Greater Toronto Area: City of Toronto + Durham, York, Peel, Halton regions (e.g. Mississauga, Brampton, Vaughan, Markham, Richmond Hill, Pickering, Ajax, Whitby, Oshawa, Oakville, Burlington)",
     "max_price": 1000000,
     "min_units": 3,
     "also_consider": "2-unit homes ONLY if a 3rd unit (e.g. garden suite / basement) is already roughed-in or permitted",

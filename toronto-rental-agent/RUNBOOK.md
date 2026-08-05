@@ -1,8 +1,11 @@
 # Daily Toronto Rental-Property Scout — Runbook
 
 You are running the daily property-scouting job. Goal: deliver **2–3 investment
-properties in the Toronto area, under $1,000,000, with 3+ rental units (or clear
-3-unit potential), where rent can cover the mortgage at minimum down payment.**
+properties in the Greater Toronto Area, under $1,000,000, with 3+ rental units
+(or clear 3-unit potential), where rent can cover the mortgage at minimum down
+payment.** The GTA includes the City of Toronto plus Durham, York, Peel, and
+Halton regions — the 905 (Mississauga, Brampton, Oshawa, Ajax, Pickering, etc.)
+often has better price-to-rent ratios than Toronto proper, so search it every day.
 
 Read `config.json` first — all criteria and assumptions live there.
 
@@ -28,6 +31,13 @@ directly):
 - `duplex with basement apartment 3 units for sale Toronto under $1,000,000`
 - Follow-up per candidate: `"<street number> <street name>" Toronto triplex`
   to cross-verify price/units across multiple sites' snippets.
+- 905/GTA sweeps (rotate cities daily): `triplex for sale Mississauga OR
+  Brampton under $1,000,000`, `legal triplex Oshawa OR Whitby OR Ajax for sale`,
+  `zolo.ca triplex Mississauga "For Sale @"`, `multiplex for sale Vaughan OR
+  Markham under 1 million`. Durham region (Oshawa/Whitby/Ajax) is the most
+  likely source of sub-$1M triplexes that fully cash-flow.
+- Mark 905 candidates with `"toronto": false` in the JSON — they pay single
+  (provincial-only) land transfer tax, which the analyzer prices in.
 
 Expectation-setting: legal 4-plexes in Toronto proper run $2M+; the sub-$1M
 pool is triplexes and duplex+basement conversions, and only a handful are
