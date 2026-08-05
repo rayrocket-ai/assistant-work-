@@ -1,0 +1,42 @@
+{
+  "search": {
+    "region": "Toronto + inner GTA (East York, Scarborough, North York, Etobicoke, York)",
+    "max_price": 1000000,
+    "min_units": 3,
+    "also_consider": "2-unit homes ONLY if a 3rd unit (e.g. garden suite / basement) is already roughed-in or permitted",
+    "property_types": ["triplex", "fourplex", "multiplex", "duplex with third suite", "investment property"],
+    "sources": [
+      "housesigma.com",
+      "realtor.ca",
+      "zolo.ca",
+      "realmaster.com",
+      "listing.ca"
+    ],
+    "good_location_signals": [
+      "walking distance to TTC subway/streetcar or GO station",
+      "low neighbourhood vacancy (CMHC Toronto vacancy is ~2%)",
+      "near hospitals, universities/colleges, or major employment",
+      "avoid: major road frontage only if price compensates, severe deferred maintenance"
+    ]
+  },
+  "financing": {
+    "default_rate_pct": 4.09,
+    "rate_note": "Update each run: search current best 5-yr fixed INSURED mortgage rate Canada",
+    "amortization_years": 25,
+    "owner_occupied": true,
+    "qualifying_stress_test_note": "Qualify at max(contract + 2%, 5.25%)"
+  },
+  "assumptions": {
+    "property_tax_pct_of_price": 0.0072,
+    "insurance_monthly": 275,
+    "maintenance_pct_of_price_yr": 0.01,
+    "vacancy_pct_of_rent": 0.03,
+    "landlord_paid_utilities_monthly": 150,
+    "closing_legal_misc": 2500,
+    "ontario_pst_on_cmhc_pct": 0.08
+  },
+  "delivery": {
+    "properties_per_day": "2-3",
+    "report_dir": "toronto-rental-agent/reports"
+  }
+}
