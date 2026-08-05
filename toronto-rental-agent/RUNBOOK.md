@@ -54,6 +54,27 @@ advertised 74 Clouston Ave as a "$884,900 fourplex" but the MLS listing shows a
 3-bed single-family. Also beware name collisions — "Scarborough" returns
 Scarborough Maine/UK results; anchor queries with "Toronto" or the MLS number.
 
+## Step 2.5 — Verify ACTIVE status (hard gate, learned 2026-08-05)
+**Cached "For Sale @" pages persist for months after a property sells.** The
+first live run reported two properties the user knew had sold months earlier —
+every source above still showed them as active. A pick may only go in the
+report if it passes ALL of:
+1. **Current MLS series.** TRREB MLS numbers increment over time — as of
+   Aug 2026 active listings are 13-series (E13/W13/C13/N13xxxxx); 12-series
+   numbers date from ~2025 and are almost certainly sold or expired.
+   Calibrate each run against MLS numbers seen on brand-new rental listings.
+2. **Explicit recency signal** in a snippet: "X hours/days on site", "new
+   listing", or a listed-date within the last ~45 days. "June 2026" on a
+   cached page does NOT count — that page may predate a sale.
+3. **Negative sold-check**: search `"<address>" sold` and
+   `"<address>" <city>` — reject on any sold/leased/delisted/terminated
+   evidence, and treat HouseSigma sold-page snippets as authoritative.
+Anything that fails a gate but looks compelling goes in the report ONLY under
+a clearly-labeled "Leads (status unverified — check on HouseSigma)" section
+with its MLS number so the user can verify in one tap. Never present a
+gate-failing listing as a pick. If nothing passes all three gates, say so
+plainly — a short honest report beats a stale one.
+
 Skip: price > $1M, fewer than 3 units unless a 3rd is permitted/roughed-in,
 land-lease/co-op, obvious teardowns.
 
