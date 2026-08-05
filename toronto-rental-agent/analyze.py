@@ -66,27 +66,57 @@ def main():
 
     def coverage(r):
         if r["rent_covers_everything"]:
-            return "rent covers mortgage + all costs"
+            return "✅ YES — covers mortgage + ALL costs"
         if r["rent_covers_mortgage"]:
-            return "rent covers mortgage (not all operating costs)"
-        return f"rent does NOT cover mortgage (short ${r['monthly_payment'] - r['monthly_rent']:,.0f}/mo)"
+            return f"✅ covers mortgage (short ${-r['monthly_cash_flow']:,} of total costs)"
+        return f"❌ NO (short ${r['monthly_payment'] - r['monthly_rent']:,.0f}/mo on mortgage alone)"
 
-    def scenario_lines(label, r):
-        print(f"- **{label}**: down ${r['down_payment']:,} ({r['down_payment_pct']}%), "
-              f"cash to close ${r['cash_to_close']:,}, mortgage ${r['monthly_payment']:,}/mo")
-        print(f"  - Cash flow **${r['monthly_cash_flow']:,}/mo** — {coverage(r)}")
-        print(f"  - Cap rate {r['cap_rate_pct']}% | cash-on-cash {r['cash_on_cash_pct']}% | "
-              f"DSCR {r['dscr']} | breakeven rent ${r['breakeven_rent']:,}")
+    def money(v, hide_zero=False):
+        return "—" if (hide_zero and not v) else f"${v:,.0f}"
+
+    def property_tables(l, own, inv):
+        out = []
+        out.append("**One-time costs to buy**\n")
+        out.append("| Upfront | Owner-occupied (minimum down) | Pure rental (20% down) |")
+        out.append("|---|---:|---:|")
+        out.append(f"| Down payment | {money(own['down_payment'])} ({own['down_payment_pct']}%) | {money(inv['down_payment'])} ({inv['down_payment_pct']}%) |")
+        out.append(f"| CMHC premium (added to loan, not cash) | {money(own['cmhc_premium_added_to_loan'], True)} | {money(inv['cmhc_premium_added_to_loan'], True)} |")
+        out.append(f"| PST on CMHC (cash) | {money(own['pst_on_cmhc'], True)} | {money(inv['pst_on_cmhc'], True)} |")
+        out.append(f"| Land transfer tax | {money(own['land_transfer_tax'])} | {money(inv['land_transfer_tax'])} |")
+        out.append(f"| Legal & closing | {money(own['closing_legal'])} | {money(inv['closing_legal'])} |")
+        out.append(f"| **Cash needed to close** | **{money(own['cash_to_close'])}** | **{money(inv['cash_to_close'])}** |")
+        out.append(f"| Total mortgage | {money(own['total_loan'])} | {money(inv['total_loan'])} |")
+        out.append("\n**Monthly costs vs rent**\n")
+        out.append("| Monthly | Owner-occupied | Pure rental |")
+        out.append("|---|---:|---:|")
+        out.append(f"| Mortgage payment ({own['rate_pct']}%, {own['amortization_years']}yr) | {money(own['monthly_payment'])} | {money(inv['monthly_payment'])} |")
+        out.append(f"| Property tax | {money(own['monthly_property_tax'])} | {money(inv['monthly_property_tax'])} |")
+        out.append(f"| Insurance | {money(own['monthly_insurance'])} | {money(inv['monthly_insurance'])} |")
+        out.append(f"| Maintenance reserve | {money(own['monthly_maintenance'])} | {money(inv['monthly_maintenance'])} |")
+        out.append(f"| Vacancy allowance | {money(own['monthly_vacancy'])} | {money(inv['monthly_vacancy'])} |")
+        out.append(f"| Landlord-paid utilities | {money(own['monthly_utilities'])} | {money(inv['monthly_utilities'])} |")
+        out.append(f"| **Total monthly cost** | **{money(own['monthly_payment'] + own['monthly_operating_costs'])}** | **{money(inv['monthly_payment'] + inv['monthly_operating_costs'])}** |")
+        out.append(f"| **Rent income** | **{money(own['monthly_rent'])}** | **{money(inv['monthly_rent'])}** |")
+        cf_o, cf_i = own['monthly_cash_flow'], inv['monthly_cash_flow']
+        out.append(f"| **Net cash flow** | **{'+' if cf_o >= 0 else '−'}${abs(cf_o):,}/mo** | **{'+' if cf_i >= 0 else '−'}${abs(cf_i):,}/mo** |")
+        out.append("\n**Investment metrics**\n")
+        out.append("| Metric | Owner-occupied | Pure rental |")
+        out.append("|---|---:|---:|")
+        out.append(f"| Rent covers mortgage? | {coverage(own)} | {coverage(inv)} |")
+        out.append(f"| Breakeven rent | {money(own['breakeven_rent'])} | {money(inv['breakeven_rent'])} |")
+        out.append(f"| Cap rate | {own['cap_rate_pct']}% | {inv['cap_rate_pct']}% |")
+        out.append(f"| Cash-on-cash return | {own['cash_on_cash_pct']}% | {inv['cash_on_cash_pct']}% |")
+        out.append(f"| DSCR | {own['dscr']} | {inv['dscr']} |")
+        out.append(f"| Stress-test payment | {money(own['stress_test_payment'])} | {money(inv['stress_test_payment'])} |")
+        return "\n".join(out)
 
     print(f"# Ranked candidates ({len(rows)} analyzed, top {args.top} shown)\n")
     for rank, (s, l, own, inv) in enumerate(rows[: args.top], 1):
-        print(f"## {rank}. {l['address']} — score {s}")
-        print(f"- **${l['price']:,}** | {l['units']} units | rent ${l['monthly_rent']:,}/mo ({l.get('rent_source', 'estimate')})")
-        print(f"- {l.get('url', '')}")
-        print(f"- Location: {l.get('location_notes', 'n/a')}")
-        print(f"- Mortgage @ {own['rate_pct']}% / {own['amortization_years']}yr; opex ${own['monthly_operating_costs']:,}/mo")
-        scenario_lines("Owner-occupied (min 10% down)", own)
-        scenario_lines("Pure rental (min 20% down)", inv)
+        print(f"## {rank}. {l['address']} — {money(l['price'])} — score {s}")
+        print(f"{l['units']} units | rent ${l['monthly_rent']:,}/mo ({l.get('rent_source', 'estimate')})  ")
+        print(f"{l.get('url', '')}  ")
+        print(f"Location: {l.get('location_notes', 'n/a')}\n")
+        print(property_tables(l, own, inv))
         print()
 
     if len(rows) > args.top:

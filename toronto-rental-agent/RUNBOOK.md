@@ -16,21 +16,30 @@ the search fails, use `financing.default_rate_pct` from config.json. If the rate
 moved >0.25% from the config default, update config.json in your commit.
 
 ## Step 2 — Find candidate listings (aim for 6–10 candidates)
-**FIRST, test whether direct browsing works** — it's strictly better than
-snippet-mining when available:
+**PRIMARY CHANNEL (live, verified-active): the REMAX/CREA feed via
+`fetch_remax.py`.** As of 2026-08-05 the environment's network policy allows
+remax.ca, which is server-rendered and curl-friendly. Listings there are
+MLS-synced (CREA feed) — a property that's sold disappears, and detail pages
+carry `datePosted`, so everything it returns is verifiably ACTIVE (this
+satisfies Step 2.5 automatically for these candidates):
 ```
-NODE_PATH=/opt/node22/lib/node_modules node toronto-rental-agent/browse.js "https://www.zolo.ca/toronto-real-estate/triplex" --links
+python3 toronto-rental-agent/fetch_remax.py --max-price 1000000 --min-beds 5 \
+    --pages 10 --max-details 35 -o candidates-raw.json
 ```
-- If it renders: browse Zolo/HouseSigma category pages directly (sort by
-  newest), read listing pages for price/units/rents/days-on-market, and skip
-  the snippet workarounds below. Listing status is live, which also satisfies
-  most of Step 2.5. If HS_EMAIL/HS_PASSWORD env vars are set, add
-  `--housesigma-login` to unlock HouseSigma active/sold status — treat it as
-  authoritative.
-- If it fails with ERR_TUNNEL_CONNECTION_FAILED: the environment's network
-  policy blocks listing sites (state as of 2026-08-05) — fall back to the
-  snippet techniques below and say in the report that live verification was
-  unavailable.
+It scans each GTA city's newest listings, shortlists high-bedroom non-condo
+properties, reads each detail page's description, and infers unit count.
+Reality check from the first live run: active 3+ unit properties under $1M are
+often ZERO across the whole GTA — the sub-$1M multi-unit market is mostly
+house + legal basement apartment (2 units). When no 3+ unit exists, report the
+best 2-unit legal-apartment properties, clearly labeled, and say the market had
+no triplexes today. When a triplex does hit the feed, it leads the report.
+
+**SECONDARY (discovery only): WebSearch snippets** — other brokerages'
+exclusive listings may not surface in the newest pages. Any candidate found
+this way MUST pass Step 2.5 before becoming a pick. Direct curl of other
+listing sites mostly fails (zolo/rew/kijiji bot-block plain fetchers;
+housesigma is a login-walled SPA; Chromium via browse.js currently gets TLS
+resets through the egress proxy on non-GitHub hosts — parked until fixed).
 
 **Snippet fallback — field-tested 2026-08-05: WebFetch returns 403 on
 essentially ALL listing sites from this environment** (zolo, realtor.ca, housesigma, rew, kijiji,
@@ -101,10 +110,15 @@ Otherwise estimate from market data (mark `"market estimate"`): WebSearch
 CMHC averages. Be conservative — use the low end of the range.
 
 ## Step 4 — Run the numbers
-Write the candidates to a JSON file (schema at top of `analyze.py`), then:
+Write the candidates to a JSON file (schema at top of `analyze.py` — fill in
+`monthly_rent` with your Step 3 estimates and set `"toronto": false` for 905
+addresses), then:
 ```
 python3 toronto-rental-agent/analyze.py candidates.json --rate <today's rate> --top 3
 ```
+Output is table-formatted per property (one-time costs, monthly cost breakdown
+vs rent, metrics — both financing scenarios side by side). Paste it into the
+report as-is.
 The calculator applies minimum-down rules automatically (10% down for 3–4 unit
 owner-occupied, CMHC premium rolled into the loan, Toronto double land-transfer
 tax, semi-annual compounding, stress test).

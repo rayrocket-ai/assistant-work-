@@ -26,7 +26,11 @@ const flagVal = f => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : 
 if (!url) { console.error('usage: browse.js <url> [--links] [--jsonld] [--screenshot out.png] [--housesigma-login]'); process.exit(2); }
 
 (async () => {
-  const browser = await chromium.launch({ headless: true });
+  const proxy = process.env.HTTPS_PROXY || process.env.https_proxy;
+  const browser = await chromium.launch({
+    headless: true,
+    proxy: proxy ? { server: proxy } : undefined,
+  });
   const ctx = await browser.newContext({
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36',
     viewport: { width: 1366, height: 900 },
