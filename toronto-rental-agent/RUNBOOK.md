@@ -13,22 +13,36 @@ the search fails, use `financing.default_rate_pct` from config.json. If the rate
 moved >0.25% from the config default, update config.json in your commit.
 
 ## Step 2 — Find candidate listings (aim for 6–10 candidates)
-Search multiple ways; each source is blind to the others:
-- WebSearch: `triplex for sale Toronto under $1,000,000 housesigma`
-- WebSearch: `fourplex OR multiplex for sale Toronto site:zolo.ca`
-- WebSearch: `triplex for sale Toronto site:realtor.ca` (realtor.ca often blocks
-  direct fetches — get details from the search snippets or a mirror like zolo/listing.ca)
-- WebSearch: `duplex with basement apartment for sale Toronto under 1 million`
-- WebFetch category pages that allow it, e.g.:
-  - `https://www.zolo.ca/toronto-real-estate/triplex`
-  - `https://www.zolo.ca/toronto-real-estate/fourplex`
-  - `https://listing.ca/mls/?tri-plex.for.sale`
-- HouseSigma requires login for full data; use search snippets and cross-reference
-  the same address on zolo/listing.ca/realmaster for price and details.
+**Field-tested 2026-08-05: WebFetch returns 403 on essentially ALL listing
+sites from this environment** (zolo, realtor.ca, housesigma, rew, kijiji,
+zillow, trovit, keyhomes, viewhomes, small realtor sites, even news sites).
+Don't burn time on fetches — WebSearch snippets are the working channel, and
+they surface prices, unit counts, and even stated rents.
+
+High-yield query patterns (Zolo page titles follow `<address> — For Sale @
+$<price> | Zolo.ca`, so quoting a price prefix surfaces priced listings
+directly):
+- `zolo.ca triplex Toronto "For Sale @ $9"` (and `@ $8`, `@ $7` variants)
+- `triplex for sale Toronto under $1,000,000 housesigma`
+- `legal triplex for sale <neighbourhood> Toronto asking price`
+- `duplex with basement apartment 3 units for sale Toronto under $1,000,000`
+- Follow-up per candidate: `"<street number> <street name>" Toronto triplex`
+  to cross-verify price/units across multiple sites' snippets.
+
+Expectation-setting: legal 4-plexes in Toronto proper run $2M+; the sub-$1M
+pool is triplexes and duplex+basement conversions, and only a handful are
+listed at any time. Finding 2–3 verified candidates is a normal day.
 
 For each candidate capture: address, asking price, # of units (self-contained,
 with kitchens — not just "finished basement"), beds/baths per unit, listed
 actual rents if stated, days on market, and the listing URL.
+
+**Verification is mandatory — search AI snippets conflate listings.** Confirm
+price AND unit count from at least two independent sources (e.g. Zolo title +
+MLS-number snippet) before analyzing. Real failure case: an aggregator
+advertised 74 Clouston Ave as a "$884,900 fourplex" but the MLS listing shows a
+3-bed single-family. Also beware name collisions — "Scarborough" returns
+Scarborough Maine/UK results; anchor queries with "Toronto" or the MLS number.
 
 Skip: price > $1M, fewer than 3 units unless a 3rd is permitted/roughed-in,
 land-lease/co-op, obvious teardowns.
